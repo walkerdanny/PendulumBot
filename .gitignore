@@ -45,3 +45,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Super secret shit
+config.py
+config.pyc
+
+# Don't upload the pictures
+*.png
