@@ -1,5 +1,3 @@
-import tweepy
-import time
 import numpy as np
 import datetime
 import subprocess
@@ -118,7 +116,7 @@ maxVel = np.amax(thePointz[:,3])
 minVel = np.amin(thePointz[:,3])
 
 drawBase = False;
-openscad_string = ''
+openscad_string = '/*\n' + initialConditionsString + '*/\n'
 for i in xrange(num_points-1):
     thisPoint = thePointz[i]
     nextPoint = thePointz[i+1]
@@ -157,38 +155,50 @@ cadFile = open(cadFileName,'w')
 cadFile.write(openscad_string)
 cadFile.close()
 
-conditionsName = fileName + ".txt"
-conditions = open(fileName, 'w')
-conditions.write(initialConditionsString)
-conditions.close()
+# conditionsName = fileName + ".txt"
+# conditions = open(fileName, 'w')
+# conditions.write(initialConditionsString)
+# conditions.close()
 
 # All this shit needs porting to Unix
 
 cameraArg = "--camera=0,0,%(transZ)f,55,0,25,%(zoomOut)f" % {"transZ":-L/2,"zoomOut": L*5}
-lastArg = "-o " + fileName + ".png"
+lastArg = "-o" + fileName + ".png"
 
 colorschemes = ["Cornfield","Sunset","Metallic","Starnight","BeforeDawn","Nature","DeepOcean"]
 colorschemeArg = "--colorscheme=" + random.choice(colorschemes)
 
 print "Generating image..."
-picName = ' ' + fileName + '.png' # I have no idea why the file name has a space in front of it...
+picName = fileName + '.png' # I have no idea why the file name has a space in front of it...
 subprocess.check_output(["C:\Program Files\OpenSCAD\openscad.com", cadFileName, "--imgsize=1024,512", "--autocenter",colorschemeArg,"--projection=p", cameraArg, lastArg], shell=True)
 print "Generated image: " + picName
 
 
 print "Generating STL..."
-lastArg = "-o " + fileName + ".stl"
-#subprocess.check_output(["C:\Program Files\OpenSCAD\openscad.com", cadFileName, lastArg], shell=True) # Get the STL in about an hours time..
+lastArg = "-o" + fileName + ".stl"
+subprocess.check_output(["C:\Program Files\OpenSCAD\openscad.com", cadFileName, lastArg], shell=True) # Get the STL in about an hours time..
 print "STL generated: " + fileName + ".stl"
+
+commitArg = "-m \"Added " + fileName + ".stl and .scad\""
+
+addArg1 = "add " + cadFileName
+addArg2 = "add " + fileName + ".stl"
+
+print addArg1
+print addArg2
+
+# Git it good
+subprocess.check_output(['git', 'add', '-A'], shell=True)
+subprocess.check_output(['git', 'commit', '-m \"Added ' + fileName + '.stl and .scad\"' ], shell=True)
+subprocess.check_output(['git', 'push'], shell=True)
 
 # Twitter shit
 auth = tweepy.OAuthHandler(config.api_key, config.api_secret)
 auth.set_access_token(config.access_token, config.access_token_secret)
 twitter = tweepy.API(auth)
 
-twitter.update_with_media(picName, initialConditionsString)
+STLURL = "https://github.com/walkerdanny/PendulumBot/blob/master/" + fileName + ".stl"
 
+twitter.update_with_media(picName, initialConditionsString + STLURL)
 
-
-# Now we have the image and the .stl file, the next step is to push to github
-#github push or upload or some shit
+# Could that be it?!?
